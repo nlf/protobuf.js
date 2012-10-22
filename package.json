@@ -5,7 +5,7 @@
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "git://github.com/nathan-lafreniere/node-protobuf.js"
+    "url": "git://github.com/nathan-lafreniere/protobuf.js"
   },
   "keywords": [
     "protobuf",
