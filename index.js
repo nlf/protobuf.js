@@ -1,4 +1,5 @@
-var fs = require('fs');
+var fs = require('fs'),
+    path = require('path');
 
 function Protobuf(schema) {
     this.schema = readMessages(schema);
