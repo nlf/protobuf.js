@@ -1,6 +1,6 @@
 {
   "name": "protobuf.js",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "a pure javascript protocol buffer encoding implementation, written specifically for riak",
   "main": "index.js",
   "repository": {

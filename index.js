@@ -63,7 +63,7 @@ function parseSchema(file) {
     new_lines = new_lines.map(function (line) {
         if (line.match(/\/\//)) line = line.replace(/\s?\/\/.*$/, '');
         if (line.match(/^import/)) {
-            var f = fs.readFileSync(line.replace(/import\s|\"|;/g, ''), 'utf8');
+            var f = fs.readFileSync(path.dirname(file) + line.replace(/import\s|\"|;/g, ''), 'utf8');
             line = parseSchema(f);
         }
         return line;
