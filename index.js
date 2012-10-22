@@ -44,7 +44,7 @@ function decode(varint) {
     return { num: result, bytes: bytesRead };
 }
 
-function parseSchema(file) {
+function parseSchema(file, filepath) {
     var lines = file.split('\n'),
         new_lines = [],
         mlc = false,
@@ -64,7 +64,7 @@ function parseSchema(file) {
     new_lines = new_lines.map(function (line) {
         if (line.match(/\/\//)) line = line.replace(/\s?\/\/.*$/, '');
         if (line.match(/^import/)) {
-            var f = fs.readFileSync(path.dirname(file) + line.replace(/import\s|\"|;/g, ''), 'utf8');
+            var f = fs.readFileSync(path.dirname(filepath) + '/' + line.replace(/import\s|\"|;/g, ''), 'utf8');
             line = parseSchema(f);
         }
         return line;
@@ -149,7 +149,7 @@ function readMessages(schema) {
 
 exports.loadSchema = function (schema) {
     var f = fs.readFileSync(schema, 'utf8');
-    return new Protobuf(parseSchema(f));
+    return new Protobuf(parseSchema(f, schema));
 };
 
 Protobuf.prototype.decode = function (message, data) {
