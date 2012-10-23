@@ -117,7 +117,11 @@ function readMessages(schema) {
                         new_schema[msg][this_msg[2]].type = 2;
                         break;
                     default:
-                        new_schema[msg][this_msg[2]].type = 2;
+                        if (new_schema[msg][this_msg[1]] && new_schema[msg][this_msg[1]].raw_type === 'enum') {
+                            new_schema[msg][this_msg[2]].type = 0;
+                        } else {
+                            new_schema[msg][this_msg[2]].type = 2;
+                        }
                 }
                 new_schema[msg][this_msg[2]].raw_type = this_msg[1];
                 new_schema[msg][this_msg[2]].field = parseInt(this_msg[4], 10);
@@ -138,7 +142,7 @@ function readMessages(schema) {
                 in_enum = false;
             } else {
                 var this_enum = line.trim().split(' ');
-                if (!new_schema[msg][line_enum]) new_schema[msg][line_enum] = {};
+                if (!new_schema[msg][line_enum]) new_schema[msg][line_enum] = { raw_type: 'enum' };
                 new_schema[msg][line_enum][this_enum[0]] = parseInt(this_enum[2], 10);
             }
         }
@@ -207,6 +211,7 @@ Protobuf.prototype.encode = function (message, params) {
                     bytes.push(params[key].length);
                     bytes.concat(params[key]);
                 } else {
+                    console.log(key, schema);
                     bytes.push(Buffer.byteLength(params[key]));
                     for (var i = 0; i < params[key].length; i++) {
                         bytes.push(params[key].charCodeAt(i));
