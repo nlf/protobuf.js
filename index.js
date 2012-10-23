@@ -195,7 +195,7 @@ Protobuf.prototype.decode = function (message, data) {
 };
 
 Protobuf.prototype.encode = function (message, params) {
-    if (!~Object.keys(this.schema).indexOf(message)) return false;
+    if (!~Object.keys(this.schema).indexOf(message) || !params) return new Buffer([]);
     var schema = this.schema[message],
         bytes = [];
 
