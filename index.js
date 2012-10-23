@@ -201,16 +201,22 @@ Protobuf.prototype.decode = function (message, data) {
 
 Protobuf.prototype.encode = function (message, params) {
     if (!~Object.keys(this.schema).indexOf(message) || !params) return new Buffer([]);
-    var schema = this.schema[message],
+    var self = this,
+        schema = this.schema[message],
         bytes = [];
 
     Object.keys(params).forEach(function (key) {
-        if (schema.hasOwnProperty(key)) {
+        if (schema.hasOwnProperty(key) && typeof params[key] !== 'undefined') {
             bytes.push((schema[key].field << 3) + schema[key].type);
             if (schema[key].type === 2) {
+                if (!Array.isArray(params[key]) && typeof params[key] === 'object') {
+                    params[key] = self.encode(schema[key].raw_type, params[key]);
+                    params[key] = bufferToArray(params[key]);
+                }
                 if (Array.isArray(params[key])) {
-                    bytes.push(params[key].length);
-                    bytes.concat(params[key]);
+                    var encoded = encode(params[key].length);
+                    bytes = bytes.concat(bufferToArray(encoded));
+                    bytes = bytes.concat(params[key]);
                 } else {
                     var encoded = encode(Buffer.byteLength(params[key]));
                     for (var i = 0; i < encoded.length; i++) {
@@ -221,7 +227,9 @@ Protobuf.prototype.encode = function (message, params) {
                     }
                 }
             } else if (schema[key].type === 0) {
-                bytes.push(encode(params[key]));
+                var msg = encode(params[key]);
+                msg = bufferToArray(msg);
+                bytes = bytes.concat(msg);
             }
         }
     });
