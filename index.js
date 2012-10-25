@@ -182,7 +182,7 @@ Protobuf.prototype.decode = function (message, data) {
                         val = buffer.slice(varint.bytes + 1, len).toString();
                     }
                 } else {
-                    val = parseMessage(schema[key].raw_type, buffer.slice(2, len));
+                    val = parseMessage(schema[key].raw_type, buffer.slice(varint.bytes + 1, len));
                 }
             }
             if (schema[key].repeated) {
@@ -207,18 +207,37 @@ Protobuf.prototype.encode = function (message, params) {
 
     Object.keys(params).forEach(function (key) {
         if (schema.hasOwnProperty(key) && typeof params[key] !== 'undefined') {
-            bytes.push((schema[key].field << 3) + schema[key].type);
             if (schema[key].type === 2) {
-                if (Buffer.isBuffer(params[key])) params[key] = bufferToArray(params[key]);
-                if (!Array.isArray(params[key]) && typeof params[key] === 'object') {
-                    params[key] = self.encode(schema[key].raw_type, params[key]);
-                    params[key] = bufferToArray(params[key]);
-                }
-                if (Array.isArray(params[key])) {
+                if (Buffer.isBuffer(params[key])) {
+                    bytes.push((schema[key].field << 3) + schema[key].type);
                     var encoded = encode(params[key].length);
                     bytes = bytes.concat(bufferToArray(encoded));
-                    bytes = bytes.concat(params[key]);
+                    bytes = bytes.concat(bufferToArray(params[key]));
+                } else if (typeof params[key] === 'object') {
+                    if (Array.isArray(params[key])) {
+                        var ret = [];
+                        params[key].forEach(function (item) {
+                            ret.push(self.encode(schema[key].raw_type, item));
+                        });
+                        params[key] = ret.map(function (item) {
+                            var arr = bufferToArray(item),
+                                len = bufferToArray(encode(arr.length)),
+                                head = [(schema[key].field << 3) + schema[key].type];
+                            return head.concat(len).concat(arr);
+                        }).reduce(function (a, b) {
+                            return a.concat(b);
+                        });
+                        bytes = bytes.concat(params[key]);
+                    } else {
+                        params[key] = self.encode(schema[key].raw_type, params[key]);
+                        params[key] = bufferToArray(params[key]);
+                        bytes.push((schema[key].field << 3) + schema[key].type);
+                        var encoded = encode(params[key].length);
+                        bytes = bytes.concat(bufferToArray(encoded));
+                        bytes = bytes.concat(params[key]);
+                    }
                 } else {
+                    bytes.push((schema[key].field << 3) + schema[key].type);
                     var encoded = encode(Buffer.byteLength(params[key]));
                     for (var i = 0; i < encoded.length; i++) {
                         bytes.push(encoded[i]);
@@ -228,6 +247,7 @@ Protobuf.prototype.encode = function (message, params) {
                     }
                 }
             } else if (schema[key].type === 0) {
+                bytes.push((schema[key].field << 3) + schema[key].type);
                 var msg = encode(params[key]);
                 msg = bufferToArray(msg);
                 bytes = bytes.concat(msg);
