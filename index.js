@@ -177,9 +177,9 @@ Protobuf.prototype.decode = function (message, data) {
                 len = varint.num + varint.bytes + 1;
                 if (schema[key].raw_type === 'string' || schema[key].raw_type === 'bytes') {
                     if (key === 'vclock') {
-                        val = bufferToArray(buffer.slice(2, len));
+                        val = buffer.slice(varint.bytes + 1, len);
                     } else {
-                        val = buffer.slice(2, len).toString();
+                        val = buffer.slice(varint.bytes + 1, len).toString();
                     }
                 } else {
                     val = parseMessage(schema[key].raw_type, buffer.slice(2, len));
@@ -209,6 +209,7 @@ Protobuf.prototype.encode = function (message, params) {
         if (schema.hasOwnProperty(key) && typeof params[key] !== 'undefined') {
             bytes.push((schema[key].field << 3) + schema[key].type);
             if (schema[key].type === 2) {
+                if (Buffer.isBuffer(params[key])) params[key] = bufferToArray(params[key]);
                 if (!Array.isArray(params[key]) && typeof params[key] === 'object') {
                     params[key] = self.encode(schema[key].raw_type, params[key]);
                     params[key] = bufferToArray(params[key]);
