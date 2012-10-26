@@ -215,19 +215,21 @@ Protobuf.prototype.encode = function (message, params) {
                     bytes = bytes.concat(bufferToArray(params[key]));
                 } else if (typeof params[key] === 'object') {
                     if (Array.isArray(params[key])) {
-                        var ret = [];
-                        params[key].forEach(function (item) {
-                            ret.push(self.encode(schema[key].raw_type, item));
-                        });
-                        params[key] = ret.map(function (item) {
-                            var arr = bufferToArray(item),
-                                len = bufferToArray(encode(arr.length)),
-                                head = [(schema[key].field << 3) + schema[key].type];
-                            return head.concat(len).concat(arr);
-                        }).reduce(function (a, b) {
-                            return a.concat(b);
-                        });
-                        bytes = bytes.concat(params[key]);
+                        if (params[key].length > 0) {
+                            var ret = [];
+                            params[key].forEach(function (item) {
+                                ret.push(self.encode(schema[key].raw_type, item));
+                            });
+                            params[key] = ret.map(function (item) {
+                                var arr = bufferToArray(item),
+                                    len = bufferToArray(encode(arr.length)),
+                                    head = [(schema[key].field << 3) + schema[key].type];
+                                return head.concat(len).concat(arr);
+                            }).reduce(function (a, b) {
+                                return a.concat(b);
+                            });
+                            bytes = bytes.concat(params[key]);
+                        }
                     } else {
                         params[key] = self.encode(schema[key].raw_type, params[key]);
                         params[key] = bufferToArray(params[key]);
