@@ -1,47 +1,9 @@
 var fs = require('fs'),
-    path = require('path');
+    path = require('path'),
+    butils = require('butils');
 
 function Protobuf(schema) {
     this.schema = readMessages(schema);
-}
-
-function bufferToArray(buffer) {
-    var bytes = [];
-    for (var i = 0; i < buffer.length; i++) {
-        bytes.push(buffer[i]);
-    }
-    return bytes;
-}
-
-function encode(num) {
-    function _rshift(num, bits) {
-        return num / Math.pow(2, bits);
-    }
-
-    if (num === 0) return new Buffer([0x00]);
-    var bytes = [];
-    while (num >= 0x80) {
-        bytes.push(num | 0x80);
-        num = _rshift(num, 7);
-    }
-    bytes.push(num);
-    return new Buffer(bytes);
-}
-
-function decode(varint) {
-    function _lshift(num, bits) {
-        return num * Math.pow(2, bits);
-    }
-
-    var nextByte,
-        result = 0,
-        bytesRead = 0;
-    do {
-        nextByte = varint[bytesRead];
-        result += _lshift((nextByte & 0x7F), (7 * bytesRead));
-        bytesRead++;
-    } while (nextByte >= 0x80);
-    return { num: result, bytes: bytesRead };
 }
 
 function parseSchema(file, filepath) {
@@ -168,18 +130,18 @@ Protobuf.prototype.decode = function (message, data) {
                 return schema[key].field === field;
             })[0];
             if (schema[key].type === 0) {
-                varint = decode(buffer.slice(1));
+                varint = butils.readVarint(buffer, 1);
                 len = varint.bytes + 1;
                 val = varint.num;
                 if (schema[key].raw_type === 'bool') val = Boolean(val);
             } else if (schema[key].type === 2) {
-                varint = decode(buffer.slice(1));
+                varint = butils.readVarint(buffer, 1);
                 len = varint.num + varint.bytes + 1;
                 if (schema[key].raw_type === 'string' || schema[key].raw_type === 'bytes') {
                     if (key === 'vclock') {
                         val = buffer.slice(varint.bytes + 1, len);
                     } else {
-                        val = buffer.slice(varint.bytes + 1, len).toString();
+                        val = butils.readString(buffer, varint.bytes + 1, len);
                     }
                 } else {
                     val = parseMessage(schema[key].raw_type, buffer.slice(varint.bytes + 1, len));
@@ -210,9 +172,8 @@ Protobuf.prototype.encode = function (message, params) {
             if (schema[key].type === 2) {
                 if (Buffer.isBuffer(params[key])) {
                     bytes.push((schema[key].field << 3) + schema[key].type);
-                    var encoded = encode(params[key].length);
-                    bytes = bytes.concat(bufferToArray(encoded));
-                    bytes = bytes.concat(bufferToArray(params[key]));
+                    butils.writeVarint(bytes, params[key].length, bytes.length);
+                    butils.writeVarint(bytes, params[key], bytes.length);
                 } else if (typeof params[key] === 'object') {
                     if (Array.isArray(params[key])) {
                         if (params[key].length > 0) {
@@ -220,42 +181,29 @@ Protobuf.prototype.encode = function (message, params) {
                             params[key].forEach(function (item) {
                                 ret.push(self.encode(schema[key].raw_type, item));
                             });
-                            params[key] = ret.map(function (item) {
-                                var arr = bufferToArray(item),
-                                    len = bufferToArray(encode(arr.length)),
-                                    head = [(schema[key].field << 3) + schema[key].type];
-                                return head.concat(len).concat(arr);
-                            }).reduce(function (a, b) {
-                                return a.concat(b);
+                            params[key].forEach(function (item) {
+                                bytes.push((schema[key].field << 3) + schema[key].type);
+                                butils.writeVarint(bytes, item.length, bytes.length);
+                                bytes = bytes.concat(item);
                             });
-                            bytes = bytes.concat(params[key]);
                         }
                     } else {
                         params[key] = self.encode(schema[key].raw_type, params[key]);
-                        params[key] = bufferToArray(params[key]);
                         bytes.push((schema[key].field << 3) + schema[key].type);
-                        var encoded = encode(params[key].length);
-                        bytes = bytes.concat(bufferToArray(encoded));
+                        butils.writeVarint(bytes, params[key].length, bytes.length);
                         bytes = bytes.concat(params[key]);
                     }
                 } else {
                     bytes.push((schema[key].field << 3) + schema[key].type);
-                    var encoded = encode(Buffer.byteLength(params[key]));
-                    for (var i = 0; i < encoded.length; i++) {
-                        bytes.push(encoded[i]);
-                    }
-                    for (var i = 0; i < params[key].length; i++) {
-                        bytes.push(params[key].charCodeAt(i));
-                    }
+                    butils.writeVarint(bytes, Buffer.byteLength(params[key]), bytes.length);
+                    butils.writeString(bytes, params[key], bytes.length);
                 }
             } else if (schema[key].type === 0) {
                 bytes.push((schema[key].field << 3) + schema[key].type);
-                var msg = encode(params[key]);
-                msg = bufferToArray(msg);
-                bytes = bytes.concat(msg);
+                butils.writeVarint(bytes, params[key], bytes.length);
             }
         }
     });
 
-    return new Buffer(bytes);
+    return bytes;
 };
