@@ -121,30 +121,33 @@ exports.loadSchema = function (schema) {
 Protobuf.prototype.decode = function (message, data) {
     var self = this;
 
-    function parseMessage(name, buffer) {
+    function parseMessage(name, buffer, start, end) {
+        start = start || 0;
+        end = end || buffer.length;
+        var pos = start;
         var type, field, varint, len, val, key, ret = {}, schema = self.schema[name];
-        while (buffer.length > 0) {
-            type = buffer[0] & 0x07;
-            field = buffer[0] >> 3;
+        while (pos < end) {
+            type = buffer[pos] & 0x07;
+            field = buffer[pos] >> 3;
             key = Object.keys(schema).filter(function (key) {
                 return schema[key].field === field;
             })[0];
             if (schema[key].type === 0) {
-                varint = butils.readVarint(buffer, 1);
+                varint = butils.readVarint(buffer, pos + 1);
                 len = varint.bytes + 1;
                 val = varint.num;
                 if (schema[key].raw_type === 'bool') val = Boolean(val);
             } else if (schema[key].type === 2) {
-                varint = butils.readVarint(buffer, 1);
+                varint = butils.readVarint(buffer, pos + 1);
                 len = varint.num + varint.bytes + 1;
                 if (schema[key].raw_type === 'string' || schema[key].raw_type === 'bytes') {
                     if (key === 'vclock') {
-                        val = buffer.slice(varint.bytes + 1, len);
+                        val = buffer.slice(pos + varint.bytes + 1, pos + len);
                     } else {
-                        val = butils.readString(buffer, varint.bytes + 1, len);
+                        val = butils.readString(buffer, pos + varint.bytes + 1, pos + len);
                     }
                 } else {
-                    val = parseMessage(schema[key].raw_type, buffer.slice(varint.bytes + 1, len));
+                    val = parseMessage(schema[key].raw_type, buffer, pos + varint.bytes + 1, pos + len);
                 }
             }
             if (schema[key].repeated) {
@@ -153,7 +156,7 @@ Protobuf.prototype.decode = function (message, data) {
             } else {
                 ret[key] = val;
             }
-            buffer = buffer.slice(len);
+            pos += len;
         }
         return ret;
     };
