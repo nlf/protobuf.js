@@ -45,45 +45,45 @@ function readMessages(schema) {
         line = line.replace(/;/g, '');
         if (line.match(/^message/)) {
             in_msg = true;
-            msg = line.match(/^message\s(\w+)\s{/)[1];
+            msg = line.match(/^message\s(\w+)\s\{/)[1];
             new_schema[msg] = {};
-        } else if (line.match(/^}$/)) {
+        } else if (line.match(/^\}$/)) {
             in_msg = false;
         } else if (in_msg && !in_enum) {
             var this_msg = line.trim().split(' ');
             if (this_msg[0] !== 'enum') {
                 new_schema[msg][this_msg[2]] = {};
                 switch (this_msg[1]) {
-                    case 'int32':
-                    case 'int64':
-                    case 'uint32':
-                    case 'uint64':
-                    case 'sint32':
-                    case 'sint64':
-                    case 'bool':
-                    case 'enum':
+                case 'int32':
+                case 'int64':
+                case 'uint32':
+                case 'uint64':
+                case 'sint32':
+                case 'sint64':
+                case 'bool':
+                case 'enum':
+                    new_schema[msg][this_msg[2]].type = 0;
+                    break;
+                case 'fixed64':
+                case 'sfixed64':
+                case 'double':
+                    new_schema[msg][this_msg[2]].type = 1;
+                    break;
+                case 'fixed32':
+                case 'sfixed32':
+                case 'float':
+                    new_schema[msg][this_msg[2]].type = 5;
+                    break;
+                case 'string':
+                case 'bytes':
+                    new_schema[msg][this_msg[2]].type = 2;
+                    break;
+                default:
+                    if (new_schema[msg][this_msg[1]] && new_schema[msg][this_msg[1]].raw_type === 'enum') {
                         new_schema[msg][this_msg[2]].type = 0;
-                        break;
-                    case 'fixed64':
-                    case 'sfixed64':
-                    case 'double':
-                        new_schema[msg][this_msg[2]].type = 1;
-                        break;
-                    case 'fixed32':
-                    case 'sfixed32':
-                    case 'float':
-                        new_schema[msg][this_msg[2]].type = 5;
-                        break;
-                    case 'string':
-                    case 'bytes':
+                    } else {
                         new_schema[msg][this_msg[2]].type = 2;
-                        break;
-                    default:
-                        if (new_schema[msg][this_msg[1]] && new_schema[msg][this_msg[1]].raw_type === 'enum') {
-                            new_schema[msg][this_msg[2]].type = 0;
-                        } else {
-                            new_schema[msg][this_msg[2]].type = 2;
-                        }
+                    }
                 }
                 new_schema[msg][this_msg[2]].raw_type = this_msg[1];
                 new_schema[msg][this_msg[2]].field = parseInt(this_msg[4], 10);
@@ -96,11 +96,11 @@ function readMessages(schema) {
                     new_schema[msg][this_msg[2]].repeated = true;
                 }
             } else {
-                line_enum = line.match(/^\s*enum\s(\w+)\s{/)[1];
+                line_enum = line.match(/^\s*enum\s(\w+)\s\{/)[1];
                 in_enum = true;
             }
         } else if (in_enum) {
-            if (line.match(/\s*}$/)) {
+            if (line.match(/\s*\}$/)) {
                 in_enum = false;
             } else {
                 var this_enum = line.trim().split(' ');
@@ -125,13 +125,17 @@ Protobuf.prototype.decode = function (message, data) {
         start = start || 0;
         end = end || buffer.length;
         var pos = start;
-        var type, field, varint, len, val, key, ret = {}, schema = self.schema[name];
+        var type, field, varint, len, val, keys, key, ret = {}, schema = self.schema[name];
         while (pos < end) {
             type = buffer[pos] & 0x07;
             field = buffer[pos] >> 3;
-            key = Object.keys(schema).filter(function (key) {
+            keys = Object.keys(schema);
+            for (var i = 0; i < keys.length; i++) {
+                if (schema[keys[i]].field === field) key = keys[i];
+            }
+            /*key = Object.keys(schema).filter(function (key) {
                 return schema[key].field === field;
-            })[0];
+            })[0];*/
             if (schema[key].type === 0) {
                 varint = butils.readVarint(buffer, pos + 1);
                 len = varint.bytes + 1;
@@ -159,7 +163,7 @@ Protobuf.prototype.decode = function (message, data) {
             pos += len;
         }
         return ret;
-    };
+    }
 
     return parseMessage(message, data);
 };
