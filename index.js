@@ -169,7 +169,7 @@ Protobuf.prototype.decode = function (message, data) {
 };
 
 Protobuf.prototype.encode = function (message, params) {
-    if (!~Object.keys(this.schema).indexOf(message) || !params) return new Buffer([]);
+    if (!~Object.keys(this.schema).indexOf(message) || !params) return [];
     var self = this,
         schema = this.schema[message],
         bytes = [];
