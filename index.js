@@ -186,13 +186,11 @@ Protobuf.prototype.encode = function (message, params) {
                         if (params[key].length > 0) {
                             var ret = [];
                             params[key].forEach(function (item) {
-                                ret.push(self.encode(schema[key].raw_type, item));
+                                ret = ret.concat(self.encode(schema[key].raw_type, item));
                             });
-                            params[key].forEach(function (item) {
-                                bytes.push((schema[key].field << 3) + schema[key].type);
-                                butils.writeVarint(bytes, item.length, bytes.length);
-                                bytes = bytes.concat(item);
-                            });
+                            bytes.push((schema[key].field << 3) + schema[key].type);
+                            butils.writeVarint(bytes, ret.length, bytes.length);
+                            bytes = bytes.concat(ret);
                         }
                     } else {
                         params[key] = self.encode(schema[key].raw_type, params[key]);
