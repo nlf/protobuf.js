@@ -1,6 +1,7 @@
 var fs = require('fs'),
     path = require('path'),
-    butils = require('butils');
+    butils = require('butils'),
+    wtf = require('wtf8');
 
 function Protobuf(schema) {
     this.schema = readMessages(schema);
@@ -148,7 +149,7 @@ Protobuf.prototype.decode = function (message, data) {
                     if (key === 'vclock') {
                         val = buffer.slice(pos + varint.bytes + 1, pos + len);
                     } else {
-                        val = butils.readString(buffer, pos + varint.bytes + 1, pos + len);
+                        val = new Buffer(wtf.decode(buffer.slice(pos + varint.bytes + 1, pos + len)));
                     }
                 } else {
                     val = parseMessage(schema[key].raw_type, buffer, pos + varint.bytes + 1, pos + len);
@@ -200,8 +201,11 @@ Protobuf.prototype.encode = function (message, params) {
                     }
                 } else {
                     bytes.push((schema[key].field << 3) + schema[key].type);
-                    butils.writeVarint(bytes, Buffer.byteLength(params[key]), bytes.length);
-                    butils.writeString(bytes, params[key], bytes.length);
+                    var buf = wtf.encode(params[key]);
+                    butils.writeVarint(bytes, buf.length, bytes.length);
+                    Array.prototype.slice.call(buf, 0).forEach(function(byte) {
+	                      bytes.push(byte);
+                    });
                 }
             } else if (schema[key].type === 0) {
                 bytes.push((schema[key].field << 3) + schema[key].type);
