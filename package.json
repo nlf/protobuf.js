@@ -4,7 +4,8 @@
   "description": "a pure javascript protocol buffer encoding implementation, written specifically for riak",
   "main": "index.js",
   "dependencies": {
-    "butils": ""
+    "butils": "",
+    "wtf8": "https://github.com/lautis/wtf8/tarball/master"
   },
   "repository": {
     "type": "git",
