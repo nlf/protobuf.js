@@ -181,7 +181,9 @@ Protobuf.prototype.encode = function (message, params) {
                 if (Buffer.isBuffer(params[key])) {
                     bytes.push((schema[key].field << 3) + schema[key].type);
                     butils.writeVarint(bytes, params[key].length, bytes.length);
-                    butils.writeVarint(bytes, params[key], bytes.length);
+                    Array.prototype.slice.call(params[key], 0).forEach(function (byte) {
+                        bytes.push(byte);
+                    });
                 } else if (typeof params[key] === 'object') {
                     if (Array.isArray(params[key])) {
                         if (params[key].length > 0) {
