@@ -187,13 +187,13 @@ Protobuf.prototype.encode = function (message, params) {
                 } else if (typeof params[key] === 'object') {
                     if (Array.isArray(params[key])) {
                         if (params[key].length > 0) {
-                            var ret = [];
+                            var ret;
                             params[key].forEach(function (item) {
-                                ret = ret.concat(self.encode(schema[key].raw_type, item));
+                                bytes.push((schema[key].field << 3) + schema[key].type);
+                                ret = self.encode(schema[key].raw_type, item);
+                                butils.writeVarint(bytes, ret.length, bytes.length);
+                                bytes = bytes.concat(ret);
                             });
-                            bytes.push((schema[key].field << 3) + schema[key].type);
-                            butils.writeVarint(bytes, ret.length, bytes.length);
-                            bytes = bytes.concat(ret);
                         }
                     } else {
                         params[key] = self.encode(schema[key].raw_type, params[key]);
