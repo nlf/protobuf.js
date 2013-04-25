@@ -146,10 +146,10 @@ Protobuf.prototype.decode = function (message, data) {
                 varint = butils.readVarint(buffer, pos + 1);
                 len = varint.num + varint.bytes + 1;
                 if (schema[key].raw_type === 'string' || schema[key].raw_type === 'bytes') {
-                    if (key === 'vclock') {
+                    if (key === 'vclock' || (key === 'value' && !schema.hasOwnProperty('key'))) {
                         val = buffer.slice(pos + varint.bytes + 1, pos + len);
                     } else {
-                        val = new Buffer(wtf.decode(buffer.slice(pos + varint.bytes + 1, pos + len)));
+                        val = wtf.decode(buffer.slice(pos + varint.bytes + 1, pos + len));
                     }
                 } else {
                     val = parseMessage(schema[key].raw_type, buffer, pos + varint.bytes + 1, pos + len);
