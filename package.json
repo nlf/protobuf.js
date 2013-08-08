@@ -1,10 +1,10 @@
 {
   "name": "protobuf.js",
-  "version": "0.0.17",
+  "version": "0.0.18",
   "description": "a pure javascript protocol buffer encoding implementation, written specifically for riak",
   "main": "index.js",
   "dependencies": {
-    "butils": "",
+    "butils": "0.0.5",
     "wtf8": "https://github.com/lautis/wtf8/tarball/master"
   },
   "repository": {

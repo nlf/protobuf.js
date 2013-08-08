@@ -138,7 +138,7 @@ Protobuf.prototype.decode = function (message, data) {
                 return schema[key].field === field;
             })[0];*/
             if (schema[key].type === 0) {
-                varint = butils.readVarint(buffer, pos + 1);
+                varint = butils.readVarint(buffer, pos + 1, schema[key].raw_type === 'sint32' || schema[key].raw_type === 'sint64');
                 len = varint.bytes + 1;
                 val = varint.num;
                 if (schema[key].raw_type === 'bool') val = Boolean(val);
@@ -211,7 +211,7 @@ Protobuf.prototype.encode = function (message, params) {
                 }
             } else if (schema[key].type === 0) {
                 bytes.push((schema[key].field << 3) + schema[key].type);
-                butils.writeVarint(bytes, params[key], bytes.length);
+                butils.writeVarint(bytes, params[key], bytes.length, schema[key].raw_type === 'sint32' || schema[key].raw_type == 'sint64');
             }
         }
     });
