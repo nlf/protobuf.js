@@ -203,6 +203,7 @@ Protobuf.prototype.encode = function (message, params) {
                     }
                 } else {
                     bytes.push((schema[key].field << 3) + schema[key].type);
+                    if (typeof params[key] === 'number') params[key] = params[key].toString();
                     var buf = wtf.encode(params[key]);
                     butils.writeVarint(bytes, buf.length, bytes.length);
                     Array.prototype.slice.call(buf, 0).forEach(function(byte) {
