@@ -154,6 +154,9 @@ Protobuf.prototype.decode = function (message, data) {
                 } else {
                     val = parseMessage(schema[key].raw_type, buffer, pos + varint.bytes + 1, pos + len);
                 }
+            } else if (schema[key].type === 5) {
+                len = 5;
+                val = butils.readInt32LE(buffer, pos + 1);
             }
             if (schema[key].repeated) {
                 if (!ret.hasOwnProperty(key)) ret[key] = [];
