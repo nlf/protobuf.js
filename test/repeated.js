@@ -1,3 +1,4 @@
+/* global describe, it */
 var Protobuf = require('../');
 var Schema = require('./schema');
 var Chai = require('chai');

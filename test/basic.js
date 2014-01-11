@@ -1,8 +1,9 @@
+/* global describe, it */
 var Protobuf = require('../');
 var Schema = require('./schema');
 var Chai = require('chai');
 Chai.Assertion.includeStack = true;
-var Bignum = require('bignum');
+var long = require('long');
 var expect = Chai.expect;
 var client, encoded, decoded, check;
 
@@ -49,7 +50,7 @@ describe('Basic tests', function () {
     });
 
     it('Can encode an int64', function () {
-        decoded = Bignum(987654321);
+        decoded = long.fromNumber(987654321);
         encoded = client.encode('Test1', { int64: decoded });
         expect(encoded).to.be.an.instanceof(Buffer);
     });
@@ -61,7 +62,7 @@ describe('Basic tests', function () {
     });
 
     it('Can encode a uint64', function () {
-        decoded = Bignum(987654321);
+        decoded = long.fromNumber(987654321);
         encoded = client.encode('Test1', { uint64: decoded });
         expect(encoded).to.be.an.instanceof(Buffer);
     });
@@ -73,7 +74,7 @@ describe('Basic tests', function () {
     });
 
     it('Can encode an sint64', function () {
-        decoded = Bignum(987654321);
+        decoded = long.fromNumber(987654321);
         encoded = client.encode('Test1', { sint64: decoded });
         expect(encoded).to.be.an.instanceof(Buffer);
     });
@@ -133,7 +134,7 @@ describe('Basic tests', function () {
     });
 
     it('Can encode a fixed64', function () {
-        decoded = Bignum(987654321);
+        decoded = long.fromNumber(987654321, true);
         encoded = client.encode('Test1', { fixed64: decoded });
         expect(encoded).to.be.an.instanceof(Buffer);
     });
@@ -145,7 +146,7 @@ describe('Basic tests', function () {
     });
 
     it('Can encode an sfixed64', function () {
-        decoded = Bignum(987654321);
+        decoded = long.fromNumber(987654321);
         encoded = client.encode('Test1', { sfixed64: decoded });
         expect(encoded).to.be.an.instanceof(Buffer);
     });
@@ -157,7 +158,7 @@ describe('Basic tests', function () {
     });
 
     it('Can encode a double', function () {
-        decoded = Bignum(987654321);
+        decoded = long.fromNumber(987654321, true);
         encoded = client.encode('Test1', { double: decoded });
         expect(encoded).to.be.an.instanceof(Buffer);
     });

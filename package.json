@@ -4,7 +4,7 @@
   "description": "a pure javascript protocol buffer encoding implementation, written specifically for riak",
   "main": "index.js",
   "dependencies": {
-    "bignum": "~0.6.2"
+    "long": "~1.1.2"
   },
   "repository": {
     "type": "git",

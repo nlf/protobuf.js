@@ -1,4 +1,4 @@
-var bignum = require('bignum');
+var long = require('long');
 var varint = require('./lib/varint');
 
 function Protobuf(schema) {
@@ -16,13 +16,13 @@ Protobuf.prototype._findField = function (message, tag) {
     }
 
     return field;
-}
+};
 
 Protobuf.prototype.decode = function (message, data) {
     if (!Buffer.isBuffer(data)) return new Error('Data must be a buffer');
     if (!this.schema.messages[message]) return new Error('Unknown message');
 
-    var mc, type, tag, field, value, repeated, meta;
+    var mc, type, tag, field, value, repeated, meta, low, high;
     var enums = this.schema.messages[message].enums;
     var position = 0;
     var length = data.length;
@@ -79,7 +79,9 @@ Protobuf.prototype.decode = function (message, data) {
             case 'sfixed64':
             case 'double':
                 // read 64 bit number
-                value = bignum.fromBuffer(data.slice(position, position + 7), { endian: 'little' });
+                low = data.readInt32LE(position);
+                high = data.readInt32LE(position + 4);
+                value = new long(low, high, field.type !== 'sfixed64');
                 position += 8;
                 break;
 
@@ -177,7 +179,14 @@ Protobuf.prototype.encode = function (message, data, preserve) {
             case 'sfixed64':
             case 'double':
                 position += varint.write(result, (fields[key].tag << 3) + 1, position);
-                value = item.toBuffer({ endian: 'little' });
+                value = new Buffer(8);
+                if (fields[key].type === 'sfixed64') {
+                    value.writeInt32LE(item.getLowBitsUnsigned(), 0);
+                    value.writeInt32LE(item.getHighBitsUnsigned(), 4);
+                } else {
+                    value.writeInt32LE(item.getLowBits(), 0);
+                    value.writeInt32LE(item.getHighBits(), 4);
+                }
                 value = Array.prototype.slice.call(value);
                 result = result.concat(value);
                 position += value.length;
