@@ -51,7 +51,7 @@ function readMessages(schema) {
         } else if (line.match(/^\}$/)) {
             in_msg = false;
         } else if (in_msg && !in_enum) {
-            var this_msg = line.trim().split(' ');
+            var this_msg = line.trim().replace(/(?:\s+)/g, ' ').split(' ');
             if (this_msg[0] !== 'enum') {
                 new_schema[msg][this_msg[2]] = {};
                 switch (this_msg[1]) {
@@ -104,7 +104,7 @@ function readMessages(schema) {
             if (line.match(/\s*\}$/)) {
                 in_enum = false;
             } else {
-                var this_enum = line.trim().split(' ');
+                var this_enum = line.trim().replace(/(?:\s+)/g, ' ').split(' ');
                 if (!new_schema[msg][line_enum]) new_schema[msg][line_enum] = { raw_type: 'enum' };
                 new_schema[msg][line_enum][this_enum[0]] = parseInt(this_enum[2], 10);
             }
