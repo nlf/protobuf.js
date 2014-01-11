@@ -179,10 +179,12 @@ Protobuf.prototype.encode = function (message, params) {
         bytes = [];
 
     Object.keys(params).forEach(function (key) {
+        var varintKey;
         if (schema.hasOwnProperty(key) && typeof params[key] !== 'undefined') {
+            varintKey = (schema[key].field << 3) + schema[key].type;
             if (schema[key].type === 2) {
                 if (Buffer.isBuffer(params[key])) {
-                    bytes.push((schema[key].field << 3) + schema[key].type);
+                    butils.writeVarint(bytes, varintKey, bytes.length);
                     butils.writeVarint(bytes, params[key].length, bytes.length);
                     Array.prototype.slice.call(params[key], 0).forEach(function (byte) {
                         bytes.push(byte);
@@ -192,7 +194,7 @@ Protobuf.prototype.encode = function (message, params) {
                         if (params[key].length > 0) {
                             var ret;
                             params[key].forEach(function (item) {
-                                bytes.push((schema[key].field << 3) + schema[key].type);
+                                butils.writeVarint(bytes, varintKey, bytes.length);
                                 ret = self.encode(schema[key].raw_type, item);
                                 butils.writeVarint(bytes, ret.length, bytes.length);
                                 bytes = bytes.concat(ret);
@@ -200,21 +202,21 @@ Protobuf.prototype.encode = function (message, params) {
                         }
                     } else {
                         params[key] = self.encode(schema[key].raw_type, params[key]);
-                        bytes.push((schema[key].field << 3) + schema[key].type);
+                        butils.writeVarint(bytes, varintKey, bytes.length);
                         butils.writeVarint(bytes, params[key].length, bytes.length);
                         bytes = bytes.concat(params[key]);
                     }
                 } else {
-                    bytes.push((schema[key].field << 3) + schema[key].type);
+                    butils.writeVarint(bytes, varintKey, bytes.length);
                     if (typeof params[key] === 'number') params[key] = params[key].toString();
                     var buf = wtf.encode(params[key]);
                     butils.writeVarint(bytes, buf.length, bytes.length);
-                    Array.prototype.slice.call(buf, 0).forEach(function(byte) {
-	                      bytes.push(byte);
+                    Array.prototype.slice.call(buf, 0).forEach(function (byte) {
+                        bytes.push(byte);
                     });
                 }
             } else if (schema[key].type === 0) {
-                bytes.push((schema[key].field << 3) + schema[key].type);
+                butils.writeVarint(bytes, varintKey, bytes.length);
                 butils.writeVarint(bytes, params[key], bytes.length, schema[key].raw_type === 'sint32' || schema[key].raw_type == 'sint64');
             }
         }
