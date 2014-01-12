@@ -165,19 +165,36 @@ Protobuf.prototype.encode = function (message, data, preserve) {
             case 'int64':
             case 'uint64':
                 position += varint.write(result, fields[key].tag << 3, position);
-                value = item;
+                if (typeof item === 'number') {
+                    value = long.fromNumber(item, true);
+                } else if (typeof item === 'string') {
+                    value = long.fromString(item, true);
+                } else {
+                    value = item;
+                }
                 position += varint.write64(result, value, position);
                 break;
 
             case 'sint64':
                 position += varint.write(result, fields[key].tag << 3, position);
-                value = item;
+                if (typeof item === 'number') {
+                    value = long.fromNumber(item);
+                } else if (typeof item === 'string') {
+                    value = long.fromString(item);
+                } else {
+                    value = item;
+                }
                 position += varint.write64(result, value, position, true);
                 break;
 
             case 'fixed64':
             case 'sfixed64':
             case 'double':
+                if (typeof item === 'number') {
+                    item = long.fromNumber(item, fields[key].type !== 'sfixed64');
+                } else if (typeof item === 'string') {
+                    item = long.fromString(item, fields[key].type !== 'sfixed64');
+                }
                 position += varint.write(result, (fields[key].tag << 3) + 1, position);
                 value = new Buffer(8);
                 if (fields[key].type === 'sfixed64') {
@@ -196,6 +213,9 @@ Protobuf.prototype.encode = function (message, data, preserve) {
             case 'string':
                 position += varint.write(result, (fields[key].tag << 3) + 2, position);
                 if (!Buffer.isBuffer(item)) {
+                    if (typeof item !== 'string') {
+                        item = String(item);
+                    }
                     value = new Buffer(item, 'utf8');
                 } else {
                     value = item;
@@ -212,6 +232,9 @@ Protobuf.prototype.encode = function (message, data, preserve) {
             case 'float':
                 position += varint.write(result, (fields[key].tag << 3) + 5, position);
                 value = new Buffer(4);
+                if (typeof item !== 'number') {
+                    item = Number(item);
+                }
                 value.writeInt32LE(item, 0);
                 value = Array.prototype.slice.call(value);
                 result = result.concat(value);

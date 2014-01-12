@@ -50,7 +50,7 @@ describe('Basic tests', function () {
     });
 
     it('Can encode an int64', function () {
-        decoded = long.fromNumber(987654321);
+        decoded = long.fromNumber(987654321, true);
         encoded = client.encode('Test1', { int64: decoded });
         expect(encoded).to.be.an.instanceof(Buffer);
     });
@@ -62,7 +62,7 @@ describe('Basic tests', function () {
     });
 
     it('Can encode a uint64', function () {
-        decoded = long.fromNumber(987654321);
+        decoded = long.fromNumber(987654321, true);
         encoded = client.encode('Test1', { uint64: decoded });
         expect(encoded).to.be.an.instanceof(Buffer);
     });
