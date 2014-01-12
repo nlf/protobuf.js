@@ -1,11 +1,10 @@
 {
   "name": "protobuf.js",
-  "version": "0.0.21",
+  "version": "1.0.0",
   "description": "a pure javascript protocol buffer encoding implementation, written specifically for riak",
   "main": "index.js",
   "dependencies": {
-    "butils": "0.0.7",
-    "wtf8": "https://github.com/lautis/wtf8/tarball/master"
+    "long": "~1.1.2"
   },
   "repository": {
     "type": "git",
@@ -18,5 +17,13 @@
     "encode"
   ],
   "author": "Nathan LaFreniere <quitlahok@gmail.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "mocha": "~1.17.0",
+    "chai": "~1.8.1",
+    "precommit-hook": "~0.3.9"
+  },
+  "scripts": {
+    "test": "./node_modules/.bin/mocha test"
+  }
 }
