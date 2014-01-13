@@ -35,7 +35,7 @@ Protobuf.prototype.decode = function (message, data) {
         position += mc.length;
         field = this._findField(message, tag);
         if (!field) return new Error('Encountered unknown message tag');
-        
+
         repeated = field.rule === 'repeated';
         if (!result.hasOwnProperty(field.name) && repeated) result[field.name] = [];
 
@@ -50,6 +50,9 @@ Protobuf.prototype.decode = function (message, data) {
                 // coerce to boolean if correct
                 if (field.type === 'bool') {
                     value = Boolean(value);
+                }
+                if (field.type === 'uint32') {
+                    value = value >>> 0; // convert to unsigned int32
                 }
                 break;
 
