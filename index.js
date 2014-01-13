@@ -40,7 +40,6 @@ Protobuf.prototype.decode = function (message, data) {
         if (!result.hasOwnProperty(field.name) && repeated) result[field.name] = [];
 
         switch (field.type) {
-            case 'int32':
             case 'uint32':
             case 'bool':
                 // read varint
@@ -51,22 +50,30 @@ Protobuf.prototype.decode = function (message, data) {
                 if (field.type === 'bool') {
                     value = Boolean(value);
                 }
-                if (field.type === 'uint32') {
-                    value = value >>> 0; // convert to unsigned int32
-                }
+                break;
+
+            case 'int32':
+                value = varint.read(data, position, true);
+                position += value.length;
+                value = value.value;
                 break;
 
             case 'sint32':
                 // read zigzag encoded varint
                 value = varint.read(data, position, true);
                 position += value.length;
+                value = varint.dezigzag(value.value);
+                break;
+
+            case 'uint64':
+                // read 64 bit varint
+                value = varint.read64(data, position);
+                position += value.length;
                 value = value.value;
                 break;
 
             case 'int64':
-            case 'uint64':
-                // read 64 bit varint
-                value = varint.read64(data, position);
+                value = varint.read64(data, position, true);
                 position += value.length;
                 value = value.value;
                 break;
@@ -75,7 +82,7 @@ Protobuf.prototype.decode = function (message, data) {
                 // read zigzag encoded 64 bit varint
                 value = varint.read64(data, position, true);
                 position += value.length;
-                value = value.value;
+                value = varint.dezigzag64(value.value);
                 break;
 
             case 'fixed64':
@@ -146,10 +153,8 @@ Protobuf.prototype.encode = function (message, data, preserve) {
 
     function encodeField(key, item) {
         switch (fields[key].type) {
-            case 'int32':
             case 'uint32':
             case 'bool':
-            case 'enum':
                 position += varint.write(result, fields[key].tag << 3, position);
                 if (fields[key].type === 'bool') {
                     value = Number(item);
@@ -159,19 +164,36 @@ Protobuf.prototype.encode = function (message, data, preserve) {
                 position += varint.write(result, value, position);
                 break;
 
+            case 'int32':
+                position += varint.write(result, fields[key].tag << 3, position);
+                value = item;
+                position += varint.write(result, value, position);
+                break;
+
             case 'sint32':
                 position += varint.write(result, fields[key].tag << 3, position);
                 value = item;
-                position += varint.write(result, value, position, true);
+                position += varint.write(result, varint.zigzag(value), position, true);
                 break;
 
-            case 'int64':
             case 'uint64':
                 position += varint.write(result, fields[key].tag << 3, position);
                 if (typeof item === 'number') {
                     value = long.fromNumber(item, true);
                 } else if (typeof item === 'string') {
                     value = long.fromString(item, true);
+                } else {
+                    value = item;
+                }
+                position += varint.write64(result, value, position);
+                break;
+
+            case 'int64':
+                position += varint.write(result, fields[key].tag << 3, position);
+                if (typeof item === 'number') {
+                    value = long.fromNumber(item);
+                } else if (typeof item === 'string') {
+                    value = long.fromString(item);
                 } else {
                     value = item;
                 }
@@ -187,7 +209,7 @@ Protobuf.prototype.encode = function (message, data, preserve) {
                 } else {
                     value = item;
                 }
-                position += varint.write64(result, value, position, true);
+                position += varint.write64(result, varint.zigzag64(value), position);
                 break;
 
             case 'fixed64':
