@@ -40,13 +40,11 @@ describe('Basic tests', function () {
     it('Can encode a negative int32', function () {
         decoded = -12345;
         encoded = client.encode('Test1', { int32: decoded });
-        console.log(encoded);
         expect(encoded).to.be.an.instanceof(Buffer);
     });
 
     it('Can decode a negative int32', function () {
         check = client.decode('Test1', encoded);
-        console.log(check.int32);
         expect(check.int32).to.exist;
         expect(check.int32).to.deep.equal(decoded);
     });
