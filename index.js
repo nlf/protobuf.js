@@ -148,6 +148,8 @@ Protobuf.prototype.encode = function (message, data, preserve) {
     var key, repeated, value;
     var result = [];
     var position = 0;
+    var length = 0;
+    var field, fieldLength, fieldPosition;
     var fields = this.schema.messages[message].fields;
     var enums = this.schema.messages[message].enums;
 
@@ -155,29 +157,49 @@ Protobuf.prototype.encode = function (message, data, preserve) {
         switch (fields[key].type) {
             case 'uint32':
             case 'bool':
-                position += varint.write(result, fields[key].tag << 3, position);
                 if (fields[key].type === 'bool') {
                     value = Number(item);
                 } else {
                     value = item;
                 }
-                position += varint.write(result, value, position);
+
+                fieldPosition = 0;
+                fieldLength = varint.write(null, fields[key].tag << 3) + varint.write(null, value);
+                length += fieldLength;
+                field = new Buffer(fieldLength);
+
+                fieldPosition += varint.write(field, fields[key].tag << 3, fieldPosition);
+                fieldPosition += varint.write(field, value, fieldPosition);
+                result.push(field);
                 break;
 
             case 'int32':
-                position += varint.write(result, fields[key].tag << 3, position);
                 value = item;
-                position += varint.write(result, value, position);
+
+                fieldPosition = 0;
+                fieldLength = varint.write(null, fields[key].tag << 3) + varint.write(null, value);
+                length += fieldLength;
+                field = new Buffer(fieldLength);
+
+                fieldPosition += varint.write(field, fields[key].tag << 3, fieldPosition);
+                fieldPosition += varint.write(field, value, fieldPosition);
+                result.push(field);
                 break;
 
             case 'sint32':
-                position += varint.write(result, fields[key].tag << 3, position);
                 value = item;
-                position += varint.write(result, varint.zigzag(value), position, true);
+
+                fieldPosition = 0;
+                fieldLength = varint.write(null, fields[key].tag << 3) + varint.write(null, varint.zigzag(value), 0, true);
+                length += fieldLength;
+                field = new Buffer(fieldLength);
+
+                fieldPosition += varint.write(field, fields[key].tag << 3, fieldPosition);
+                fieldPosition += varint.write(field, varint.zigzag(value), fieldPosition, true);
+                result.push(field);
                 break;
 
             case 'uint64':
-                position += varint.write(result, fields[key].tag << 3, position);
                 if (typeof item === 'number') {
                     value = long.fromNumber(item, true);
                 } else if (typeof item === 'string') {
@@ -185,11 +207,18 @@ Protobuf.prototype.encode = function (message, data, preserve) {
                 } else {
                     value = item;
                 }
-                position += varint.write64(result, value, position);
+
+                fieldPosition = 0;
+                fieldLength = varint.write(null, fields[key].tag << 3) + varint.write64(null, value);
+                length += fieldLength;
+                field = new Buffer(fieldLength);
+
+                fieldPosition += varint.write(field, fields[key].tag << 3, fieldPosition);
+                fieldPosition += varint.write64(field, value, fieldPosition);
+                result.push(field);
                 break;
 
             case 'int64':
-                position += varint.write(result, fields[key].tag << 3, position);
                 if (typeof item === 'number') {
                     value = long.fromNumber(item);
                 } else if (typeof item === 'string') {
@@ -197,11 +226,18 @@ Protobuf.prototype.encode = function (message, data, preserve) {
                 } else {
                     value = item;
                 }
-                position += varint.write64(result, value, position);
+
+                fieldPosition = 0;
+                fieldLength = varint.write(null, fields[key].tag << 3) + varint.write64(null, value);
+                length += fieldLength;
+                field = new Buffer(fieldLength);
+
+                fieldPosition += varint.write(field, fields[key].tag << 3, fieldPosition);
+                fieldPosition += varint.write64(field, value, fieldPosition);
+                result.push(field);
                 break;
 
             case 'sint64':
-                position += varint.write(result, fields[key].tag << 3, position);
                 if (typeof item === 'number') {
                     value = long.fromNumber(item);
                 } else if (typeof item === 'string') {
@@ -209,7 +245,15 @@ Protobuf.prototype.encode = function (message, data, preserve) {
                 } else {
                     value = item;
                 }
-                position += varint.write64(result, varint.zigzag64(value), position);
+
+                fieldPosition = 0;
+                fieldLength = varint.write(null, fields[key].tag << 3) + varint.write64(null, varint.zigzag64(value));
+                length += fieldLength;
+                field = new Buffer(fieldLength);
+
+                fieldPosition += varint.write(field, fields[key].tag << 3, fieldPosition);
+                fieldPosition += varint.write64(field, varint.zigzag64(value), fieldPosition);
+                result.push(field);
                 break;
 
             case 'fixed64':
@@ -220,23 +264,25 @@ Protobuf.prototype.encode = function (message, data, preserve) {
                 } else if (typeof item === 'string') {
                     item = long.fromString(item, fields[key].type !== 'sfixed64');
                 }
-                position += varint.write(result, (fields[key].tag << 3) + 1, position);
-                value = new Buffer(8);
+
+                fieldPosition = 0;
+                fieldLength = varint.write(null, (fields[key].tag << 3) + 1) + 8;
+                length += fieldLength;
+                field = new Buffer(fieldLength);
+
+                fieldPosition += varint.write(field, (fields[key].tag << 3) + 1, fieldPosition);
                 if (fields[key].type === 'sfixed64') {
-                    value.writeInt32LE(item.getLowBitsUnsigned(), 0);
-                    value.writeInt32LE(item.getHighBitsUnsigned(), 4);
+                    field.writeInt32LE(item.getLowBitsUnsigned(), 1);
+                    field.writeInt32LE(item.getHighBitsUnsigned(), 5);
                 } else {
-                    value.writeInt32LE(item.getLowBits(), 0);
-                    value.writeInt32LE(item.getHighBits(), 4);
+                    field.writeInt32LE(item.getLowBits(), 1);
+                    field.writeInt32LE(item.getHighBits(), 5);
                 }
-                value = Array.prototype.slice.call(value);
-                result = result.concat(value);
-                position += value.length;
+                result.push(field);
                 break;
 
             case 'bytes':
             case 'string':
-                position += varint.write(result, (fields[key].tag << 3) + 2, position);
                 if (!Buffer.isBuffer(item)) {
                     if (typeof item !== 'string') {
                         item = String(item);
@@ -246,37 +292,58 @@ Protobuf.prototype.encode = function (message, data, preserve) {
                     value = item;
                 }
 
-                value = Array.prototype.slice.call(value);
-                position += varint.write(result, value.length, position);
-                result = result.concat(value);
-                position += value.length;
+                fieldPosition = 0;
+                fieldLength = varint.write(null, (fields[key].tag << 3) + 2) + varint.write(null, value.length) + value.length;
+                length += fieldLength;
+                field = new Buffer(fieldLength);
+
+                fieldPosition += varint.write(field, (fields[key].tag << 3) + 2, fieldPosition);
+                fieldPosition += varint.write(field, value.length, fieldPosition);
+                value.copy(field, fieldPosition);
+                result.push(field);
                 break;
 
             case 'fixed32':
             case 'sfixed32':
             case 'float':
-                position += varint.write(result, (fields[key].tag << 3) + 5, position);
-                value = new Buffer(4);
                 if (typeof item !== 'number') {
                     item = Number(item);
                 }
-                value.writeInt32LE(item, 0);
-                value = Array.prototype.slice.call(value);
-                result = result.concat(value);
-                position += value.length;
+
+                fieldPosition = 0;
+                fieldLength = varint.write(null, (fields[key].tag << 3) + 5) + 4;
+                length += fieldLength;
+                field = new Buffer(fieldLength);
+
+                fieldPosition += varint.write(field, (fields[key].tag << 3) + 5, fieldPosition);
+                field.writeInt32LE(item, fieldPosition);
+                result.push(field);
                 break;
 
             default:
                 if (enums && enums[fields[key].type]) {
-                    position += varint.write(result, fields[key].tag << 3, position);
                     value = item;
-                    position += varint.write(result, value, position);
+
+                    fieldPosition = 0;
+                    fieldLength = varint.write(null, fields[key].tag << 3) + varint.write(null, value);
+                    length += fieldLength;
+                    field = new Buffer(fieldLength);
+
+                    fieldPosition += varint.write(field, fields[key].tag << 3, fieldPosition);
+                    fieldPosition += varint.write(field, value, fieldPosition);
+                    result.push(field);
                 } else {
-                    position += varint.write(result, (fields[key].tag << 3) + 2, position);
-                    value = self.encode(fields[key].type, item, true);
-                    position += varint.write(result, value.length, position);
-                    result = result.concat(value);
-                    position += value.length;
+                    value = self.encode(fields[key].type, item);
+
+                    fieldPosition = 0;
+                    fieldLength = varint.write(null, (fields[key].tag << 3) + 2) + varint.write(null, value.length) + value.length;
+                    length += fieldLength;
+                    field = new Buffer(fieldLength);
+
+                    fieldPosition += varint.write(field, (fields[key].tag << 3) + 2, fieldPosition);
+                    fieldPosition += varint.write(field, value.length, fieldPosition);
+                    value.copy(field, fieldPosition);
+                    result.push(field);
                 }
                 break;
         }
@@ -298,9 +365,7 @@ Protobuf.prototype.encode = function (message, data, preserve) {
         }
     }
 
-    if (!preserve) {
-        result = new Buffer(result);
-    }
+    result = Buffer.concat(result, length);
 
     return result;
 };
