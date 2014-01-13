@@ -45,7 +45,7 @@ describe('Conversion tests', function () {
         check = client.decode('Test1', encoded);
         expect(check.int64).to.exist;
         expect(check.int64).to.be.an.instanceof(long);
-        expect(check.int64).to.deep.equal(long.fromNumber(decoded, true));
+        expect(check.int64).to.deep.equal(long.fromNumber(decoded));
     });
 
     it('Accepts strings in place of longs', function () {

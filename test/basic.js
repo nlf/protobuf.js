@@ -13,49 +13,97 @@ describe('Basic tests', function () {
         expect(client.schema).to.exist;
     });
 
-    it('Can encode an int32', function () {
-        decoded = 12345;
-        encoded = client.encode('Test1', { int32: decoded });
-        expect(encoded).to.be.an.instanceof(Buffer);
-    });
-
-    it('Can decode an int32', function () {
-        check = client.decode('Test1', encoded);
-        expect(check.int32).to.exist;
-        expect(check.int32).to.deep.equal(decoded);
-    });
-
-    it('Can encode a uint32', function () {
-        decoded = 12345;
+    it('Can encode the max uint32', function () {
+        decoded = 4294967295;
         encoded = client.encode('Test1', { uint32: decoded });
         expect(encoded).to.be.an.instanceof(Buffer);
     });
 
-    it('Can decode a uint32', function () {
+    it('Can decode the max uint32', function () {
         check = client.decode('Test1', encoded);
         expect(check.uint32).to.exist;
         expect(check.uint32).to.deep.equal(decoded);
     });
 
-    it('Can encode an sint32', function () {
-        decoded = -12345;
+    it('Can encode the min uint32', function () {
+        decoded = 0;
+        encoded = client.encode('Test1', { uint32: decoded });
+        expect(encoded).to.be.an.instanceof(Buffer);
+    });
+
+    it('Can decode the min uint32', function () {
+        check = client.decode('Test1', encoded);
+        expect(check.uint32).to.exist;
+        expect(check.uint32).to.deep.equal(decoded);
+    });
+
+    it('Can encode the max int32', function () {
+        decoded = 2147483647;
+        encoded = client.encode('Test1', { int32: decoded });
+        expect(encoded).to.be.an.instanceof(Buffer);
+    });
+
+    it('Can decode the max int32', function () {
+        check = client.decode('Test1', encoded);
+        expect(check.int32).to.exist;
+        expect(check.int32).to.deep.equal(decoded);
+    });
+
+    it('Can encode the min int32', function () {
+        decoded = -2147483648;
+        encoded = client.encode('Test1', { int32: decoded });
+        expect(encoded).to.be.an.instanceof(Buffer);
+    });
+
+    it('Can decode the min int32', function () {
+        check = client.decode('Test1', encoded);
+        expect(check.int32).to.exist;
+        expect(check.int32).to.deep.equal(decoded);
+    });
+
+    it('Can encode the min sint32', function () {
+        decoded = -2147483648;
         encoded = client.encode('Test1', { sint32: decoded });
         expect(encoded).to.be.an.instanceof(Buffer);
     });
 
-    it('Can decode an sint32', function () {
+    it('Can decode the min sint32', function () {
         check = client.decode('Test1', encoded);
         expect(check.sint32).to.exist;
         expect(check.sint32).to.deep.equal(decoded);
     });
 
-    it('Can encode an int64', function () {
-        decoded = long.fromNumber(987654321, true);
+    it('Can encode the max sint32', function () {
+        decoded = 2147483647;
+        encoded = client.encode('Test1', { sint32: decoded });
+        expect(encoded).to.be.an.instanceof(Buffer);
+    });
+
+    it('Can decode the max sint32', function () {
+        check = client.decode('Test1', encoded);
+        expect(check.sint32).to.exist;
+        expect(check.sint32).to.deep.equal(decoded);
+    });
+
+    it('Can encode the max int64', function () {
+        decoded = long.MAX_SIGNED_VALUE;
         encoded = client.encode('Test1', { int64: decoded });
         expect(encoded).to.be.an.instanceof(Buffer);
     });
 
-    it('Can decode an int64', function () {
+    it('Can decode the max int64', function () {
+        check = client.decode('Test1', encoded);
+        expect(check.int64).to.exist;
+        expect(check.int64).to.deep.equal(decoded);
+    });
+
+    it('Can encode the min int64', function () {
+        decoded = long.MIN_SIGNED_VALUE;
+        encoded = client.encode('Test1', { int64: decoded });
+        expect(encoded).to.be.an.instanceof(Buffer);
+    });
+
+    it('Can decode the min int64', function () {
         check = client.decode('Test1', encoded);
         expect(check.int64).to.exist;
         expect(check.int64).to.deep.equal(decoded);
@@ -73,13 +121,25 @@ describe('Basic tests', function () {
         expect(check.uint64).to.deep.equal(decoded);
     });
 
-    it('Can encode an sint64', function () {
-        decoded = long.fromNumber(987654321);
+    it('Can encode the max sint64', function () {
+        decoded = long.MAX_SIGNED_VALUE;
         encoded = client.encode('Test1', { sint64: decoded });
         expect(encoded).to.be.an.instanceof(Buffer);
     });
 
-    it('Can decode an sint64', function () {
+    it('Can decode the max sint64', function () {
+        check = client.decode('Test1', encoded);
+        expect(check.sint64).to.exist;
+        expect(check.sint64).to.deep.equal(decoded);
+    });
+
+    it('Can encode the min sint64', function () {
+        decoded = long.MIN_SIGNED_VALUE;
+        encoded = client.encode('Test1', { sint64: decoded });
+        expect(encoded).to.be.an.instanceof(Buffer);
+    });
+
+    it('Can decode the min sint64', function () {
         check = client.decode('Test1', encoded);
         expect(check.sint64).to.exist;
         expect(check.sint64).to.deep.equal(decoded);
@@ -116,6 +176,18 @@ describe('Basic tests', function () {
     });
 
     it('Can decode a string', function () {
+        check = client.decode('Test1', encoded);
+        expect(check.string).to.exist;
+        expect(check.string).to.deep.equal(decoded);
+    });
+
+    it('Can encode a utf8 string', function () {
+        decoded = 'testing ✓';
+        encoded = client.encode('Test1', { string: decoded });
+        expect(encoded).to.be.an.instanceof(Buffer);
+    });
+
+    it('Can decode a utf8 string', function () {
         check = client.decode('Test1', encoded);
         expect(check.string).to.exist;
         expect(check.string).to.deep.equal(decoded);
