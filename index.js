@@ -79,8 +79,8 @@ Protobuf.prototype.decode = function (message, data) {
             case 'sfixed64':
             case 'double':
                 // read 64 bit number
-                low = data.readInt32LE(position);
-                high = data.readInt32LE(position + 4);
+                low = data.readUInt32LE(position);
+                high = data.readUInt32LE(position + 4);
                 value = new long(low, high, field.type !== 'sfixed64');
                 position += 8;
                 break;
