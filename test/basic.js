@@ -25,6 +25,18 @@ describe('Basic tests', function () {
         expect(check.int32).to.deep.equal(decoded);
     });
 
+    it('Can encode a negative int32', function () {
+        decoded = -12345;
+        encoded = client.encode('Test1', { int32: decoded });
+        expect(encoded).to.be.an.instanceof(Buffer);
+    });
+
+    it('Can decode a negative int32', function () {
+        check = client.decode('Test1', encoded);
+        expect(check.int32).to.exist;
+        expect(check.int32).to.deep.equal(decoded);
+    });
+
     it('Can encode a uint32', function () {
         decoded = 12345;
         encoded = client.encode('Test1', { uint32: decoded });
