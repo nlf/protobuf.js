@@ -170,9 +170,9 @@ Protobuf.prototype.encode = function (message, data, preserve) {
             case 'uint64':
             case 'sint64':
                 if (typeof item === 'number') {
-                    value = long.fromNumber(item, fields[key].type === 'unit64');
+                    value = long.fromNumber(item, fields[key].type === 'uint64');
                 } else if (typeof item === 'string') {
-                    value = long.fromString(item, fields[key].type === 'unit64');
+                    value = long.fromString(item, fields[key].type === 'uint64');
                 } else {
                     value = item;
                 }
@@ -237,7 +237,7 @@ Protobuf.prototype.encode = function (message, data, preserve) {
             case 'uint64':
             case 'sint64':
                 if (typeof item === 'number') {
-                    value = long.fromNumber(item, fields[key].type === 'unit64');
+                    value = long.fromNumber(item, fields[key].type === 'uint64');
                 } else if (typeof item === 'string') {
                     value = long.fromString(item, fields[key].type === 'uint64');
                 } else {
