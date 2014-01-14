@@ -168,25 +168,20 @@ Protobuf.prototype.encode = function (message, data, preserve) {
                 return varint.write(null, fields[key].tag << 3) + varint.write(null, varint.zigzag(value));
             case 'int64':
             case 'uint64':
+            case 'sint64':
                 if (typeof item === 'number') {
-                    value = long.fromNumber(item, true);
+                    value = long.fromNumber(item, fields[key].type === 'unit64');
                 } else if (typeof item === 'string') {
-                    value = long.fromString(item, true);
+                    value = long.fromString(item, fields[key].type === 'unit64');
                 } else {
                     value = item;
+                }
+
+                if (fields[key].type === 'sint64') {
+                    value = varint.zigzag64(value);
                 }
 
                 return varint.write(null, fields[key].tag << 3) + varint.write64(null, value);
-            case 'sint64':
-                if (typeof item === 'number') {
-                    value = long.fromNumber(item, true);
-                } else if (typeof item === 'string') {
-                    value = long.fromString(item, true);
-                } else {
-                    value = item;
-                }
-
-                return varint.write(null, fields[key].tag << 3) + varint.write64(null, varint.zigzag64(value));
             case 'fixed64':
             case 'sfixed64':
             case 'double':
@@ -242,9 +237,9 @@ Protobuf.prototype.encode = function (message, data, preserve) {
             case 'uint64':
             case 'sint64':
                 if (typeof item === 'number') {
-                    value = long.fromNumber(item, true);
+                    value = long.fromNumber(item, fields[key].type === 'unit64');
                 } else if (typeof item === 'string') {
-                    value = long.fromString(item, true);
+                    value = long.fromString(item, fields[key].type === 'uint64');
                 } else {
                     value = item;
                 }
