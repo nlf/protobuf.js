@@ -145,7 +145,7 @@ Protobuf.prototype.encode = function (message, data, preserve) {
     if (!this.schema.messages[message]) return new Error('Unknown message');
 
     var self = this;
-    var key, key2, repeated, value;
+    var repeated, value;
     var result;
     var position = 0;
     var length = 0;
@@ -328,41 +328,28 @@ Protobuf.prototype.encode = function (message, data, preserve) {
         }
     }
 
-    // loop 1 to get total length
-    for (key in data) {
-        if (!fields[key]) return new Error('Unknown field');
-        repeated = fields[key].rule === 'repeated';
+    function walkFields(fn) {
+        var key;
+        for (key in data) {
+            if (!fields[key]) return new Error('Unknown field');
+            repeated = fields[key].rule === 'repeated';
 
-        if (repeated) {
-            if (!Array.isArray(data[key])) {
-                data[key] = [data[key]];
+            if (repeated) {
+                if (!Array.isArray(data[key])) {
+                    data[key] = [data[key]];
+                }
+                data[key].forEach(function (item) {
+                    length += fn(key, item);
+                });
+            } else {
+                length += fn(key, data[key]);
             }
-            data[key].forEach(function (item) {
-                length += getFieldLength(key, item);
-            });
-        } else {
-            length += getFieldLength(key, data[key]);
         }
     }
 
+    walkFields(getFieldLength);
     result = new Buffer(length);
-
-    // loop 2 to write data
-    for (key2 in data) {
-        if (!fields[key2]) return new Error('Unknown field');
-        repeated = fields[key2].rule === 'repeated';
-
-        if (repeated) {
-            if (!Array.isArray(data[key2])) {
-                data[key2] = [data[key2]];
-            }
-            data[key2].forEach(function (item) {
-                encodeField(key2, item);
-            });
-        } else {
-            encodeField(key2, data[key2]);
-        }
-    }
+    walkFields(encodeField);
 
     return result;
 };
