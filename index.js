@@ -145,71 +145,47 @@ Protobuf.prototype.encode = function (message, data, preserve) {
     if (!this.schema.messages[message]) return new Error('Unknown message');
 
     var self = this;
-    var key, repeated, value;
-    var result = [];
+    var repeated, value;
+    var result = null;
     var position = 0;
     var fields = this.schema.messages[message].fields;
     var enums = this.schema.messages[message].enums;
 
     function encodeField(key, item) {
         switch (fields[key].type) {
-            case 'uint32':
-            case 'bool':
-                position += varint.write(result, fields[key].tag << 3, position);
-                if (fields[key].type === 'bool') {
-                    value = Number(item);
-                } else {
-                    value = item;
-                }
-                position += varint.write(result, value, position);
-                break;
-
             case 'int32':
-                position += varint.write(result, fields[key].tag << 3, position);
-                value = item;
-                position += varint.write(result, value, position);
-                break;
-
+            case 'uint32':
             case 'sint32':
-                position += varint.write(result, fields[key].tag << 3, position);
-                value = item;
-                position += varint.write(result, varint.zigzag(value), position, true);
-                break;
-
-            case 'uint64':
-                position += varint.write(result, fields[key].tag << 3, position);
-                if (typeof item === 'number') {
-                    value = long.fromNumber(item, true);
-                } else if (typeof item === 'string') {
-                    value = long.fromString(item, true);
+            case 'bool':
+                if (fields[key].type === 'bool') {
+                    value = Number(!!item);
+                } else if (fields[key].type === 'sint32') {
+                    value = varint.zigzag(item);
                 } else {
                     value = item;
                 }
-                position += varint.write64(result, value, position);
+
+                position += varint.write(result, fields[key].tag << 3, position);
+                position += varint.write(result, value, position);
                 break;
 
             case 'int64':
-                position += varint.write(result, fields[key].tag << 3, position);
-                if (typeof item === 'number') {
-                    value = long.fromNumber(item);
-                } else if (typeof item === 'string') {
-                    value = long.fromString(item);
-                } else {
-                    value = item;
-                }
-                position += varint.write64(result, value, position);
-                break;
-
+            case 'uint64':
             case 'sint64':
-                position += varint.write(result, fields[key].tag << 3, position);
                 if (typeof item === 'number') {
-                    value = long.fromNumber(item);
+                    value = long.fromNumber(item, fields[key].type === 'uint64');
                 } else if (typeof item === 'string') {
-                    value = long.fromString(item);
+                    value = long.fromString(item, fields[key].type === 'uint64');
                 } else {
                     value = item;
                 }
-                position += varint.write64(result, varint.zigzag64(value), position);
+
+                if (fields[key].type === 'sint64') {
+                    value = varint.zigzag64(value);
+                }
+
+                position += varint.write(result, fields[key].tag << 3, position);
+                position += varint.write64(result, value, position);
                 break;
 
             case 'fixed64':
@@ -220,23 +196,46 @@ Protobuf.prototype.encode = function (message, data, preserve) {
                 } else if (typeof item === 'string') {
                     item = long.fromString(item, fields[key].type !== 'sfixed64');
                 }
+
                 position += varint.write(result, (fields[key].tag << 3) + 1, position);
-                value = new Buffer(8);
+
                 if (fields[key].type === 'sfixed64') {
-                    value.writeInt32LE(item.getLowBitsUnsigned(), 0);
-                    value.writeInt32LE(item.getHighBitsUnsigned(), 4);
+                    if (result) {
+                        result.writeInt32LE(item.getLowBitsUnsigned(), position);
+                    }
+                    position += 4;
+                    if (result) {
+                        result.writeInt32LE(item.getHighBitsUnsigned(), position);
+                    }
+                    position += 4;
                 } else {
-                    value.writeInt32LE(item.getLowBits(), 0);
-                    value.writeInt32LE(item.getHighBits(), 4);
+                    if (result) {
+                        result.writeInt32LE(item.getLowBits(), position);
+                    }
+                    position += 4;
+                    if (result) {
+                        result.writeInt32LE(item.getHighBits(), position);
+                    }
+                    position += 4;
                 }
-                value = Array.prototype.slice.call(value);
-                result = result.concat(value);
-                position += value.length;
+                break;
+
+            case 'fixed32':
+            case 'sfixed32':
+            case 'float':
+                if (typeof item !== 'number') {
+                    item = Number(item);
+                }
+
+                position += varint.write(result, (fields[key].tag << 3) + 5, position);
+                if (result) {
+                    result.writeInt32LE(item, position);
+                }
+                position += 4;
                 break;
 
             case 'bytes':
             case 'string':
-                position += varint.write(result, (fields[key].tag << 3) + 2, position);
                 if (!Buffer.isBuffer(item)) {
                     if (typeof item !== 'string') {
                         item = String(item);
@@ -246,61 +245,57 @@ Protobuf.prototype.encode = function (message, data, preserve) {
                     value = item;
                 }
 
-                value = Array.prototype.slice.call(value);
+                position += varint.write(result, (fields[key].tag << 3) + 2, position);
                 position += varint.write(result, value.length, position);
-                result = result.concat(value);
-                position += value.length;
-                break;
-
-            case 'fixed32':
-            case 'sfixed32':
-            case 'float':
-                position += varint.write(result, (fields[key].tag << 3) + 5, position);
-                value = new Buffer(4);
-                if (typeof item !== 'number') {
-                    item = Number(item);
+                if (result) {
+                    value.copy(result, position);
                 }
-                value.writeInt32LE(item, 0);
-                value = Array.prototype.slice.call(value);
-                result = result.concat(value);
                 position += value.length;
                 break;
 
             default:
                 if (enums && enums[fields[key].type]) {
-                    position += varint.write(result, fields[key].tag << 3, position);
                     value = item;
+
+                    position += varint.write(result, fields[key].tag << 3, position);
                     position += varint.write(result, value, position);
                 } else {
+                    value = self.encode(fields[key].type, item);
+
                     position += varint.write(result, (fields[key].tag << 3) + 2, position);
-                    value = self.encode(fields[key].type, item, true);
                     position += varint.write(result, value.length, position);
-                    result = result.concat(value);
+                    if (result) {
+                        value.copy(result, position);
+                    }
                     position += value.length;
                 }
                 break;
         }
     }
 
-    for (key in data) {
-        if (!fields[key]) return new Error('Unknown field');
-        repeated = fields[key].rule === 'repeated';
+    function walkFields() {
+        var key;
+        for (key in data) {
+            if (!fields[key]) return new Error('Unknown field');
+            repeated = fields[key].rule === 'repeated';
 
-        if (repeated) {
-            if (!Array.isArray(data[key])) {
-                data[key] = [data[key]];
+            if (repeated) {
+                if (!Array.isArray(data[key])) {
+                    data[key] = [data[key]];
+                }
+                data[key].forEach(function (item) {
+                    encodeField(key, item);
+                });
+            } else {
+                encodeField(key, data[key]);
             }
-            data[key].forEach(function (item) {
-                encodeField(key, item);
-            });
-        } else {
-            encodeField(key, data[key]);
         }
     }
 
-    if (!preserve) {
-        result = new Buffer(result);
-    }
+    walkFields();
+    result = new Buffer(position);
+    position = 0;
+    walkFields();
 
     return result;
 };
