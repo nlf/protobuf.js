@@ -1,21 +1,18 @@
 Protobuf.js
 -----------
 
-This is an extremely lightweight, stripped down, ugly implementation of protocol buffers written specifically for use in making a Riak library. As such, it lacks support for many of the data types, and handles a few Riak specific fields in special ways (vclocks, for one). I will happily accept pull requests to make it more compatible with the full spec.
+This is a pure javascript driver for the protocol buffer encoding protocol. It supports most of the types defined by protocol buffers, including 64 bit integers which are returned as [long](https://github.com/dcodeIO/long.js) objects.
 
 What it does:
 =============
 
-* parses .proto files to build a schema (including imports) in a very very rough way
+* reads output from [proto2json](https://github.com/Sannis/node-proto2json) as a schema
 * encodes objects to buffers
 * decodes buffers to objects
-* supports the string/bytes and varint types
 
 What it does not do:
 ====================
 
-* have full support for every directive in .proto files
-* have support for any types other than varint or string/bytes
 * make your breakfast
 
 
@@ -23,12 +20,16 @@ Usage
 =====
 
 ```javascript
-var protobuf = require('protobuf.js'),
-    translator = protobuf.loadSchema('./riak_kv.proto');
+var protobuf = require('protobuf.js');
+var proto2json = require('node-proto2json');
+proto2json.parse(fs.readFileSync('./riak_kv.proto', 'utf8'), function (err, result) {
+    var translator = new protobuf(result);
 
-var msg = translator.encode('RpbGetReq', { bucket: 'test', key: 'test' });
-//msg will *only* contain the protobuf encoded message, *NOT* the full riak packet
+    //msg will *only* contain the protobuf encoded message, *NOT* the full riak packet
+    var msg = translator.encode('RpbGetReq', { bucket: 'test', key: 'test' });
 
-var decoded = translator.decode('RpbGetResp', responsePacket);
-//again, this will *only* decode the protobuf message. you have to remove the riak header yourself
+    //again, this will *only* decode the protobuf message. you have to remove the riak header yourself
+    var decoded = translator.decode('RpbGetResp', responsePacket);
+});
+
 ```
