@@ -152,6 +152,9 @@ Protobuf.prototype.encode = function (message, data, preserve) {
     var enums = this.schema.messages[message].enums;
 
     function encodeField(key, item) {
+        if (item === undefined) {
+            return;
+        }
         switch (fields[key].type) {
             case 'int32':
             case 'uint32':
