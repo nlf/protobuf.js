@@ -100,7 +100,8 @@ Protobuf.prototype.decode = function (message, data) {
                 // read raw bytes
                 meta = varint.read(data, position);
                 position += meta.length;
-                value = data.slice(position, position + meta.value);
+                value = new Buffer(meta.value);
+                data.copy(value, 0, position, position + meta.value);
                 position += meta.value;
                 // stringify raw bytes if string
                 if (field.type === 'string') value = value.toString();
